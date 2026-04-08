@@ -1,0 +1,10 @@
+{
+	"Random": {
+		"nsamples": 50000,
+		"nlayers": 5,
+		"poisson_lambda": 6,
+		"exponent_base": 0.75,
+		"window": 100,
+		"conductor_window": 2.736
+	}
+}

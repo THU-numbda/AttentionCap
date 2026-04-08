@@ -1,0 +1,189 @@
+background_er 1
+gtemp 25
+technology FreePDK15_Library
+dielectric STI {
+	er 3.9
+	thickness 0.06
+}
+conductor OD {
+	smin 0.036
+	wmin 0.028
+	rho 0.07002
+	thickness 0.06
+}
+dielectric diel_ACT1 {
+	er 7
+	thickness 0.001
+}
+dielectric diel_ACT2 {
+	er 7
+	thickness 0.03
+}
+dielectric gate_oxide_layer {
+	er 3.9
+	thickness 0.001
+}
+dielectric diel_GATE {
+	er 7
+	thickness 0.029
+}
+dielectric GIL_diel1 {
+	er 7
+	thickness 0.02
+}
+dielectric GIL_diel2 {
+	er 3.9
+	thickness 0.085
+}
+dielectric V0_diel {
+	er 2.5
+	thickness 0.06
+}
+conductor M1 {
+	smin 0.036
+	wmin 0.028
+	rho 0.07002
+	thickness 0.06
+}
+dielectric diel_M1 {
+	er 2.5
+	thickness 0.06
+}
+dielectric diel_V1 {
+	er 2.5
+	thickness 0.06
+}
+conductor MINT1 {
+	smin 0.036
+	wmin 0.028
+	rho 0.07002
+	thickness 0.06
+}
+dielectric diel_MINT1 {
+	er 2.5
+	thickness 0.06
+}
+dielectric diel_VINT1 {
+	er 2.5
+	thickness 0.06
+}
+conductor MINT2 {
+	smin 0.036
+	wmin 0.028
+	rho 0.07002
+	thickness 0.06
+}
+dielectric diel_MINT2 {
+	er 2.5
+	thickness 0.06
+}
+dielectric diel_VINT2 {
+	er 2.5
+	thickness 0.06
+}
+conductor MINT3 {
+	smin 0.036
+	wmin 0.028
+	rho 0.07002
+	thickness 0.06
+}
+dielectric diel_MINT3 {
+	er 2.5
+	thickness 0.06
+}
+dielectric diel_VINT3 {
+	er 2.5
+	thickness 0.06
+}
+conductor MINT4 {
+	smin 0.036
+	wmin 0.028
+	rho 0.07002
+	thickness 0.06
+}
+dielectric diel_MINT4 {
+	er 2.5
+	thickness 0.06
+}
+dielectric diel_VINT4 {
+	er 2.5
+	thickness 0.06
+}
+conductor MINT5 {
+	smin 0.036
+	wmin 0.028
+	rho 0.07002
+	thickness 0.06
+}
+dielectric diel_MINT5 {
+	er 2.5
+	thickness 0.06
+}
+dielectric diel_VINT5 {
+	er 2.5
+	thickness 0.06
+}
+conductor MSMG1 {
+	smin 0.056
+	wmin 0.056
+	rho 0.052598
+	thickness 0.13
+}
+dielectric diel_MSMG1 {
+	er 2.5
+	thickness 0.13
+}
+dielectric diel_VSMG1 {
+	er 2.5
+	thickness 0.13
+}
+conductor MSMG2 {
+	smin 0.056
+	wmin 0.056
+	rho 0.052598
+	thickness 0.13
+}
+dielectric diel_MSMG2 {
+	er 2.5
+	thickness 0.13
+}
+dielectric diel_VSMG2 {
+	er 2.5
+	thickness 0.13
+}
+dielectric diel_MSMG3 {
+	er 2.5
+	thickness 0.13
+}
+dielectric diel_VSMG3 {
+	er 2.5
+	thickness 0.13
+}
+dielectric diel_MSMG4 {
+	er 2.5
+	thickness 0.13
+}
+dielectric diel_VSMG4 {
+	er 2.5
+	thickness 0.13
+}
+dielectric diel_MSMG5 {
+	er 2.5
+	thickness 0.13
+}
+dielectric diel_VSMG5 {
+	er 2.5
+	thickness 0.13
+}
+dielectric diel_MG1 {
+	er 2.5
+	thickness 0.26
+}
+dielectric diel_VG1 {
+	er 2.5
+	thickness 0.26
+}
+dielectric diel_MG2 {
+	er 2.5
+	thickness 0.26
+}

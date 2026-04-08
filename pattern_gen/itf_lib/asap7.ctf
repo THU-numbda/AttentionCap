@@ -1,0 +1,244 @@
+technology asap07
+dielectric STI {
+	er 3.9
+	thickness 0.05
+}
+dielectric PMD0 {
+	er 3.9
+	thickness 0.038
+}
+dielectric PMD1 {
+	er 3.9
+	thickness 0.019
+}
+dielectric PMD2 {
+	er 3.9
+	thickness 0.021
+}
+dielectric PMD3 {
+	er 3.9
+	thickness 0.027
+}
+dielectric ILDV0 {
+	er 3.9
+	thickness 0.036
+}
+conductor M1 {
+	wmin 0.018
+	smin 0.018
+	capaci_only_width_var 0
+	rho 0.0432
+	thickness 0.036
+}
+dielectric ILD1 {
+	er 2.9
+	thickness 0.034
+}
+dielectric HM1 {
+	er 4.8
+	thickness 0.002
+}
+dielectric ILDV1 {
+	er 2.9
+	thickness 0.036
+}
+conductor M2 {
+	wmin 0.018
+	smin 0.018
+	capaci_only_width_var 0
+	rho 0.0432
+	thickness 0.036
+}
+dielectric ILD2 {
+	er 2.9
+	thickness 0.034
+}
+dielectric HM2 {
+	er 4.8
+	thickness 0.002
+}
+dielectric ILDV2 {
+	er 2.9
+	thickness 0.036
+}
+conductor M3 {
+	wmin 0.018
+	smin 0.018
+	capaci_only_width_var 0
+	rho 0.0432
+	thickness 0.036
+}
+dielectric ILD3 {
+	er 2.9
+	thickness 0.034
+}
+dielectric HM3 {
+	er 4.8
+	thickness 0.002
+}
+dielectric ILDV3 {
+	er 2.9
+	thickness 0.036
+}
+conductor M4 {
+	wmin 0.024
+	smin 0.024
+	capaci_only_width_var 0
+	rho 0.03696
+	thickness 0.048
+}
+dielectric ILD4 {
+	er 2.9
+	thickness 0.046
+}
+dielectric HM4 {
+	er 4.8
+	thickness 0.002
+}
+dielectric ILDV4 {
+	er 2.9
+	thickness 0.048
+}
+conductor M5 {
+	wmin 0.024
+	smin 0.024
+	capaci_only_width_var 0
+	rho 0.03696
+	thickness 0.048
+}
+dielectric ILD5 {
+	er 2.9
+	thickness 0.046
+}
+dielectric HM5 {
+	er 4.8
+	thickness 0.002
+}
+dielectric ILDV5 {
+	er 2.9
+	thickness 0.048
+}
+conductor M6 {
+	wmin 0.032
+	smin 0.032
+	capaci_only_width_var 0
+	rho 0.032
+	thickness 0.064
+}
+dielectric ILD6 {
+	er 2.9
+	thickness 0.062
+}
+dielectric HM6 {
+	er 4.8
+	thickness 0.002
+}
+dielectric ILDV6 {
+	er 2.9
+	thickness 0.064
+}
+conductor M7 {
+	wmin 0.032
+	smin 0.032
+	capaci_only_width_var 0
+	rho 0.032
+	thickness 0.064
+}
+dielectric ILD7 {
+	er 2.9
+	thickness 0.062
+}
+dielectric HM7 {
+	er 4.8
+	thickness 0.002
+}
+dielectric ILDV7 {
+	er 2.9
+	thickness 0.064
+}
+conductor M8 {
+	wmin 0.040
+	smin 0.040
+	capaci_only_width_var 0
+	rho 0.0288
+	thickness 0.08
+}
+dielectric ILD8 {
+	er 2.9
+	thickness 0.078
+}
+dielectric HM8 {
+	er 4.8
+	thickness 0.002
+}
+dielectric ILDV8 {
+	er 2.9
+	thickness 0.08
+}
+conductor M9 {
+	wmin 0.040
+	smin 0.040
+	capaci_only_width_var 0
+	rho 0.0288
+	thickness 0.08
+}
+dielectric ILD9 {
+	er 2.9
+	thickness 0.078
+}
+dielectric HM9 {
+	er 4.8
+	thickness 0.002
+}
+dielectric ILDV9 {
+	er 2.9
+	thickness 0.08
+}
+via V1 {
+	via_size 0.018
+	rpv 17.2
+	bottom M1
+	top M2
+}
+via V2 {
+	via_size 0.018
+	rpv 17.2
+	bottom M2
+	top M3
+}
+via V3 {
+	via_size 0.018
+	rpv 17.2
+	bottom M3
+	top M4
+}
+via V4 {
+	via_size 0.024
+	rpv 11.8
+	bottom M4
+	top M5
+}
+via V5 {
+	via_size 0.024
+	rpv 11.8
+	bottom M5
+	top M6
+}
+via V6 {
+	via_size 0.032
+	rpv 8.2
+	bottom M6
+	top M7
+}
+via V7 {
+	via_size 0.032
+	rpv 8.2
+	bottom M7
+	top M8
+}
+via V8 {
+	via_size 0.04
+	rpv 6.3
+	bottom M8
+	top M9
+}
