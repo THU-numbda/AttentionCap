@@ -1,5 +1,4 @@
-# AttentionCap: Transformer Model for Capacitance Prediction
-
+# AttentionCap: Transformer Model for 2D Interconnect Capacitance Extraction
 ## Full experiment scripts will be released soon.
 
 ## 1\. Prepare Dataset
