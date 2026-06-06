@@ -1,4 +1,8 @@
 #!/bin/bash
+
+root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$root_dir"
+
 timestamp=$(date +%Y%m%d%H%M%S)
 target="asap7"
 
@@ -14,4 +18,4 @@ cmd="bin/pattern_gen \
 --seed 1"
 
 echo "Running command: $cmd"
-$cmd | tee pattern_gen_output/${target}_${timestamp}.log
+$cmd 2>&1 | tee pattern_gen_output/${target}_${timestamp}.log

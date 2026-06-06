@@ -1,4 +1,8 @@
 #!/bin/bash
+
+root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$root_dir"
+
 timestamp=$(date +%Y%m%d%H%M%S)
 target="asap7"
 

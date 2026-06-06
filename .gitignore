@@ -1,0 +1,5 @@
+data_test
+__pycache__
+*.png
+training_output
+*.egg-info

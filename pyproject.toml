@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "attentioncap"
+version = "0.1.0"
+description = "AttentionCap capacitance modeling utilities"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "matplotlib",
+    "numpy",
+    "tensorboard",
+    "thop",
+    "torch==2.9.0",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+py-modules = [
+    "configurator",
+    "dataset",
+    "draw",
+    "model",
+    "prepare",
+    "train",
+    "utils",
+]
