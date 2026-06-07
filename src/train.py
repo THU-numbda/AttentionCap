@@ -106,19 +106,16 @@ else:
     print("[load_state_dict] missing keys:", missing)
     print("[load_state_dict] unexpected keys:", unexpected)
     dataset_dict = checkpoint['dataset_dict']
+    iter_num = checkpoint['iter_num']
+    best_val_loss = checkpoint['best_val_loss']
     learning_rate /= 10
     min_lr /= 10
     print(f"[finetuning] Lower learning rate to {learning_rate}, {min_lr}")
-    for name, param in model.named_parameters():
-        if "extra_embedding" in name or "input_embedding" in name or "head" in name:
-            param.requires_grad = True
-        else:
-            param.requires_grad = False
 
 model.to(device)
 
-n_params = sum(param.numel() for param in model.parameters() if param.requires_grad)
-print("number of trainable parameters: %.2fM" % (n_params / 1e6))
+n_params = sum(param.numel() for param in model.parameters())
+print("number of parameters: %.2fM" % (n_params / 1e6))
 optimizer = model.configure_optimizers(weight_decay, learning_rate, (beta1, beta2), device_type)
 if checkpoint_path:
     del checkpoint
@@ -266,7 +263,7 @@ def evaluate(step, lr, max_batches=200):
             writer.add_scalar(key, value, step)
         writer.add_scalar("LearningRate", lr, step)
 
-    if not is_best:
+    if not is_best or eval_only:
         return
     best_val_loss = metrics["val/loss"]
     if step == 0:

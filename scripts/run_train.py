@@ -13,7 +13,6 @@ BASE_CMD = [sys.executable, REPO_ROOT / "src/train.py"]
 OUTPUT_ROOT = REPO_ROOT / "training_output/main_results"
 GPUS = ["cuda:7"]
 MAX_CONCURRENCY = 3
-EVAL = False
 DATASETS = [REPO_ROOT / "data/real65_50K", REPO_ROOT / "data/asap7_50K", REPO_ROOT / "data"]
 
 MODEL_CONFIGS = [
@@ -59,16 +58,10 @@ def run_one(idx, base_params, sem):
         params = dict(base_params)
         device = params.get("device", GPUS[idx % len(GPUS)] if GPUS else "cpu")
         run_name = run_name_from(params) or f"run{idx}"
-        run_root = os.path.join(OUTPUT_ROOT, run_name)
-        run_dir = max(path for path in Path(run_root).iterdir() if path.is_dir()) if EVAL else Path(run_root) / time.strftime("%Y%m%d%H%M%S")
-
-        if EVAL:
-            params["eval_only"] = "True"
-            params["checkpoint_path"] = os.path.join(run_dir, "ckpt.pt")
+        run_dir = Path(OUTPUT_ROOT) / run_name / time.strftime("%Y%m%d%H%M%S")
 
         os.makedirs(run_dir, exist_ok=True)
-        log_name = "eval.log" if params.get("eval_only", "False") == "True" else "train.log"
-        log_path = os.path.join(run_dir, log_name)
+        log_path = os.path.join(run_dir, "train.log")
 
         cmd = BASE_CMD + [f"--device={device}", f"--out_dir={run_dir}"] + [kvflag(k, v) for k, v in params.items()]
         print(f"[LAUNCH] {' '.join(shlex.quote(str(c)) for c in cmd)}\n  -> {log_path}", flush=True)
