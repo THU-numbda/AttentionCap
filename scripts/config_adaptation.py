@@ -1,11 +1,11 @@
 from config import GPUS, REPO_ROOT
 
 OUTPUT_ROOT = REPO_ROOT / "training_output/adaptation"
-MAX_CONCURRENCY = len(GPUS)
+MAX_CONCURRENCY = 5
 DATASETS = [
     REPO_ROOT / f"data/adaptation/asap7_{percent}"
-    for percent in (10, 30, 50, 70)
-] + [REPO_ROOT / "data/asap7_50K"]
+    for percent in (10, 50, 90)
+]
 RUNS = [
     {
         "use_transformer": "True",
