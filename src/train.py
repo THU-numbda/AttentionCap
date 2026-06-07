@@ -12,9 +12,9 @@ from utils import log_embedding, log_loss_by_size, log_prediction_comparison
 SRC_PATH = Path(__file__).resolve().parent
 # I/O
 out_dir = 'training_output/default'
-eval_interval = 500
+eval_interval = 2000
 plot_interval = 10 * eval_interval
-log_interval = 250
+log_interval = 500
 eval_only = False
 checkpoint_path = ''
 tensorboard_log = True
@@ -63,12 +63,8 @@ os.makedirs(out_dir, exist_ok=True)
 torch.manual_seed(1337)
 device_type = 'cuda' if 'cuda' in device else 'cpu'
 if device_type == 'cuda':
-    if hasattr(torch.backends.cuda.matmul, 'fp32_precision'):
-        torch.backends.cuda.matmul.fp32_precision = 'tf32'
-        torch.backends.cudnn.conv.fp32_precision = 'tf32'
-    else:
-        torch.backends.cuda.matmul.allow_tf32 = True
-        torch.backends.cudnn.allow_tf32 = True
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
 ptdtype = {'float32': torch.float32, 'bfloat16': torch.bfloat16, 'float16': torch.float16}[dtype]
 ctx = nullcontext() if device_type == 'cpu' else torch.amp.autocast(device_type=device_type, dtype=ptdtype)
 
@@ -255,7 +251,7 @@ def get_lr(it):
 writer = None
 if tensorboard_log:
     from torch.utils.tensorboard import SummaryWriter
-    writer = SummaryWriter(log_dir=os.path.join(out_dir, time.strftime("%Y%m%d%H%M%S")))
+    writer = SummaryWriter(log_dir=out_dir)
 
 
 def evaluate(step, lr, max_batches=200):

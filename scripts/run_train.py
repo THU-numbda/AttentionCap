@@ -4,6 +4,7 @@ import os
 import shlex
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -11,9 +12,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 BASE_CMD = [sys.executable, REPO_ROOT / "src/train.py"]
 OUTPUT_ROOT = REPO_ROOT / "training_output/main_results"
 GPUS = ["cuda:7"]
-MAX_CONCURRENCY = 4
+MAX_CONCURRENCY = 3
 EVAL = False
-DATASETS = [REPO_ROOT / "data/asap7_50K", REPO_ROOT / "data/real65_50K"]
+DATASETS = [REPO_ROOT / "data/real65_50K", REPO_ROOT / "data/asap7_50K", REPO_ROOT / "data"]
 
 MODEL_CONFIGS = [
     {
@@ -21,20 +22,20 @@ MODEL_CONFIGS = [
         "n_embd": "256",
         "n_head": "4",
         "n_layer": "6",
-        "batch_size": "128",
-        "compile": "False",
     },
     {
         "use_transformer": "True",
         "n_embd": "384",
         "n_head": "4",
         "n_layer": "8",
-        "batch_size": "128",
-        "compile": "False",
     }
 ]
 
-RUNS = [{**cfg, "data_dir": data_dir} for data_dir in DATASETS for cfg in MODEL_CONFIGS]
+RUNS = [
+    {**cfg, "data_dir": data_dir, "batch_size": "512" if data_dir == REPO_ROOT / "data" else "128"}
+    for data_dir in DATASETS
+    for cfg in MODEL_CONFIGS
+]
 
 
 os.makedirs(OUTPUT_ROOT, exist_ok=True)
@@ -50,8 +51,7 @@ def run_name_from(params):
     model = f"{'transformer' if transformer else 'mlp'}-d{params['n_embd']}-l{params['n_layer']}"
     if transformer:
         model += f"-h{params['n_head']}"
-    name = f"{dataset}__{model}__b{params['batch_size']}"
-    return f"{name}__compiled" if str(params["compile"]).lower() == "true" else name
+    return f"{dataset}__{model}__b{params['batch_size']}"
 
 
 def run_one(idx, base_params, sem):
@@ -59,7 +59,8 @@ def run_one(idx, base_params, sem):
         params = dict(base_params)
         device = params.get("device", GPUS[idx % len(GPUS)] if GPUS else "cpu")
         run_name = run_name_from(params) or f"run{idx}"
-        run_dir = os.path.join(OUTPUT_ROOT, f"{run_name}")
+        run_root = os.path.join(OUTPUT_ROOT, run_name)
+        run_dir = max(path for path in Path(run_root).iterdir() if path.is_dir()) if EVAL else Path(run_root) / time.strftime("%Y%m%d%H%M%S")
 
         if EVAL:
             params["eval_only"] = "True"

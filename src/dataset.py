@@ -67,7 +67,7 @@ def _dataset_dirs(data_dir):
         for name in sorted(os.listdir(data_dir))
         if os.path.isdir(os.path.join(data_dir, name))
     ]
-    return subdirs or [data_dir]
+    return [path for path in subdirs or [data_dir] if os.path.isfile(os.path.join(path, "train_data.pt"))]
 
 
 def get_dataset_dict(data_dir):
@@ -90,7 +90,8 @@ def get_dataloader(
     for dataset_dir in _dataset_dirs(data_dir):
         path = os.path.join(dataset_dir, f"{split}_data.pt")
         if not os.path.isfile(path):
-            raise FileNotFoundError(path)
+            logging.info("Skipping %s; missing '%s' split", dataset_dir, split)
+            continue
 
         name = os.path.basename(dataset_dir)
         if name not in dataset_dict:
