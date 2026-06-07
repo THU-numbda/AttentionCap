@@ -17,7 +17,8 @@ dependencies = [
 ]
 
 [tool.setuptools]
-package-dir = {"" = "src"}
+package-dir = {"" = "src", "baselines" = "baselines"}
+packages = ["baselines", "baselines.cnncap"]
 py-modules = [
     "configurator",
     "dataset",
