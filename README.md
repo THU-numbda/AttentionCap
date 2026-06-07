@@ -1,99 +1,174 @@
-# AttentionCap: Transformer Model for 2D Interconnect Capacitance Extraction
-## Full experiment scripts will be released soon.
+# AttentionCap: Transformer for 2D Capacitance Extraction
 
-## 1\. Prepare Dataset
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.9.0-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/)
+[![uv](https://img.shields.io/badge/package_manager-uv-6E56CF)](https://docs.astral.sh/uv/)
+[![DAC 2026](https://img.shields.io/badge/DAC-2026-005EB8)](https://www.dac.com/)
 
-The first step is to process the raw JSONL data into a PyTorch formatj. The `prepare.py` handles this by reading the data, grouping it by length, splitting it into training, validation, and test sets, and saving the results as compressed tensor files.
+The official implementation of "AttentionCap: Transformer Based Capacitance
+Matrix Learning Toward Full-Chip Extraction" (DAC'26). This repository
+provides the full pipeline to reproduce all results in the paper.
 
-### Input Data Format
+<p align="center">
+  <a href="figs/overview.pdf"><img src="figs/overview.png" alt="AttentionCap overview" width="100%"></a>
+</p>
 
-`prepare.py` expects a `.jsonl` file where each line is a JSON object containing at least the following keys:
+## Quick Start
 
-  * `"size"`: An integer representing the number of conductors ($L$).
-  * `"conductors"`: A list of conductor properties `[x,y,w,h]`, which will become the model's features ($L, 4$).
-  * `"capacitances"`: A flattened list of capacitance values, which will be the model's target outputs ($L^2$).
-
-**Example `data.jsonl` line:**
-
-```json
-{"size": 2, "conductors": [[0.1, 0.2, 0.3, 0.4], [0.5, 0.6, 0.7, 0.8]], "capacitances": [1.0, 2.0, 3.0, 4.0]}
-```
-
-### Usage
+> [!IMPORTANT]
+> Set `GPUS`, `MAX_CONCURRENCY`, datasets, and model configs in the relevant
+> `scripts/config*.py` file before launching an experiment.
 
 ```bash
-python prepare.py path/to/your/data.jsonl --plot # Recommended
-python prepare.py path/to/your/data.jsonl --output_dir ./processed_dataset --train_ratio 0.7 --val_ratio 0.15 --shuffle --plot
+uv venv
+source .venv/bin/activate
+uv pip install -e .
+
+python scripts/run_train.py
+python scripts/run_eval.py
 ```
 
-### Script Arguments
+Training outputs are written under `training_output/`. Each AttentionCap run
+creates a timestamped directory containing `train.log`, TensorBoard events,
+and the best `ckpt.pt`. Evaluation selects the latest checkpoint and writes
+`eval.log`.
 
-  * `input_file`: (Required) Path to the input `.jsonl` file.
-  * `--output_dir`: Directory to save the output files. If not provided, it defaults to a new directory named after the input file (e.g., `data.jsonl` -\> `data/`).
-  * `--train_ratio`: (Default: `0.8`) The proportion of data to use for the training set.
-  * `--val_ratio`: (Default: `0.1`) The proportion of data to use for the validation set. The remaining data becomes the test set.
-  * `--shuffle`: A flag to enable shuffling of the data before splitting. (Not totally necessary because shuffling is handled in training loaders)
-  * `--plot`: A flag to generate and save a bar chart showing the data distribution across different sizes for each split.
+### Experiment Entry Points
 
-### Output Structure
+| Experiment | Prepare / Train | Evaluate | Configuration |
+|---|---|---|---|
+| Synthetic data | `pattern_gen/run_synthetic_train_samples.sh` | `pattern_gen/run_extract_test_samples.sh` | Variables inside both scripts |
+| Convert synthetic data | `scripts/run_prepare_train_data.sh` | `scripts/run_prepare_test_data.sh` | `INPUT`, `OUTPUT` inside both scripts |
+| AttentionCap on CNNCap data | `scripts/run_train_cnncap_data.py` | `scripts/run_eval_cnncap_data.py` | `scripts/config_cnncap_data.py` |
+| Main results | `scripts/run_train.py` | `scripts/run_eval.py` | `scripts/config.py` |
+| Pretrain | `scripts/run_train_pretrain.py` | `scripts/run_eval_pretrain.py` | `scripts/config_pretrain.py` |
+| Adaptation | `scripts/run_train_adaptation.py` | `scripts/run_eval_adaptation.py` | `scripts/config_adaptation.py` |
+| Architectural ablation | `scripts/run_train_ablation.py` | `scripts/run_eval_ablation.py` | `scripts/config_ablation.py` |
+| CNNCap baseline | `baselines/cnncap/run_train.py` | `baselines/cnncap/run_eval.py` | `baselines/cnncap/config.py` |
 
-After running, the output directory will contain the following files:
+## 1. Generate Synthetic Data
 
-  * `train_data.pt`: A PyTorch file containing the training data.
-  * `val_data.pt`: A PyTorch file containing the validation data.
-  * `test_data.pt`: A PyTorch file containing the testing data.
-  * `dataset_distribution.png`: (Optional, if `--plot` is used) An image visualizing the distribution over sample length.
+Generate synthetic random samples and extract their ground-truth labels with a field solver. This could take several hours.
 
-Each `.pt` file is a dictionary where keys are the integer sizes ($L$) from the dataset. The values are another dictionary containing two tensors:
-
-  * `'features'`: A `torch.Tensor` of shape ($N, L, 4$), where $N$ is the number of samples in that split for that size.
-  * `'outputs'`: A `torch.Tensor` of shape ($N, L, S$).
-
-
-
-## 2. Create Dataloader
-
-The `dataset.py` script takes the processed `.pt` files from the previous step and creates efficient PyTorch `DataLoader` objects, ready for model training and evaluation.
-
-### Overview
-
-The script is designed for efficiency when dealing with variable-length sequences.
-
-* **Input**: It loads a data split file (e.g., `train_data.pt`) created by `prepare.py`.
-* **Augmentation**: It doubles the size of the dataset by applying a simple **horizontal flip** augmentation to the conductor coordinates.
-* **Bucket Sampling**: To minimize computational waste, it uses a custom `BucketBatchSampler`. This component groups samples of **similar lengths** (specified via `bucket_width`) into the same batches.
-* **Dynamic Padding**: Within each batch, sequences are padded with `0.0` to the maximum length present in that batch.
-* **Visualization**: When loading the `test` set, the script automatically generates and saves a visualization of the first sample from each size group (e.g., `sample0_16.png`).
-
-### Usage
-
-* For visualization, import `visualize_sample(rects: torch.Tensor, colors_mat: torch.Tensor, fname: str)` to plot any sample.
-
-* For creating dataloaders,
-```python
-from dataset import get_dataloader
-dataloaders = {
-    k : get_dataloader(
-        split=k,
-        data_dir=data_dir,
-        batch_size=batch_size,
-        bucket_width=bucket_width,
-        num_workers=4, # adjust based on your system
-        pin_memory=(device_type == 'cuda'), # pin memory for faster transfers to GPU
-    ) for k in ['train', 'val', 'test']
-}
-for split, loader in dataloaders.items():
-    for X, Y, mask in loader:
-        # Your training/evaluation code here
+```bash
+bash pattern_gen/run_synthetic_train_samples.sh
+bash pattern_gen/run_extract_test_samples.sh
 ```
 
-### Output Batch
+Key variables to configure in both scripts:
 
-When you iterate over a `DataLoader` instance created by this script, each batch is a tuple containing three tensors, dynamically padded to the maximum length within that specific batch:
+- `target`: process node name, used to select `pattern_gen/configs/<target>.json`
+  and `pattern_gen/itf_lib/<target>.ctf`.
+- `-n`, `-p`, and `--seed`: generator parameters.
+- Output: timestamped `.jsonl` data and `.log` files under
+  `pattern_gen/pattern_gen_output/`.
 
-1.  **Padded Features** (`torch.Tensor`): The input conductor data for the model.
-    * **Shape**: ($B, L_{max}, 4$), where $B$ is the batch size and $L_{max}$ is the maximum sequence length in the current batch.
-2.  **Padded Targets** (`torch.Tensor`): The corresponding ground-truth capacitance matrices.
-    * **Shape**: ($B, L_{max}, L_{max}$).
-3.  **Attention Mask** (`torch.Tensor`): A binary mask used to inform the model which elements are real data versus padding.
-    * **Shape**: ($B, L_{max}$), with a value of `1` for real data points and `0` for padding.
+`run_extract_test_samples.sh` uses
+`pattern_gen/configs/asap7_structure_input.json`, which references fixed test
+structures.
+
+## 2. Convert Data
+
+### 2.1 Synthetic
+Convert generated training JSONL into train/validation tensors, and convert the
+separate extracted test JSONL into `test_data.pt`:
+
+```bash
+bash scripts/run_prepare_train_data.sh
+bash scripts/run_prepare_test_data.sh
+```
+
+Generated files are timestamped. Edit `INPUT` and `OUTPUT` in these scripts to
+select the generated JSONL file and destination dataset directory. Processed
+dataset directories contain `train_data.pt`, `val_data.pt`, and/or
+`test_data.pt`.
+
+### 2.2 CNNCap Benchmark
+
+Place the following original CNNCap JSON datasets (from https://github.com/THU-numbda/CNNCap) under `data/cnncap/raw/`, or set `CNNCAP_RAW_DIR`:
+
+```text
+55nm_C_2_3_6.json
+55nm_C_2_4_6.json
+15nm_C_2_4_6.json
+15nm_C_2_4_9.json
+```
+
+Then convert them to tensors:
+```bash
+bash scripts/run_prepare_cnncap_data.sh
+```
+
+Converted datasets are written under `data/cnncap/`.
+
+## 3. AttentionCap on CNNCap Benchmark
+
+This trains and evaluates AttentionCap using the open-source CNNCap datasets:
+
+```bash
+python scripts/run_train_cnncap_data.py
+python scripts/run_eval_cnncap_data.py
+```
+
+Configure datasets, GPUs, model size, and batch size in
+`scripts/config_cnncap_data.py`.
+
+## 4. Main Results
+
+Run ASAP7, Real65, and mix-node training.
+
+```bash
+python scripts/run_train.py
+python scripts/run_eval.py
+```
+
+Configure the main datasets, model sizes, GPUs, concurrency, and output path in
+`scripts/config.py`.
+
+## 5. Pretrain and Adapt
+
+Pretrain the AttentionCap model on the three process-node datasets:
+
+```bash
+python scripts/run_train_pretrain.py
+python scripts/run_eval_pretrain.py
+```
+
+Then adapt the latest pretrain checkpoint to new process-node (ASAP7) using 10%, 50%, and 90% of
+the training data:
+
+```bash
+python scripts/run_train_adaptation.py
+python scripts/run_eval_adaptation.py
+```
+
+Configure these experiments in `scripts/config_pretrain.py` and
+`scripts/config_adaptation.py`. Adaptation requires a completed pretrain run.
+
+## 6. Architectural Ablation
+
+```bash
+python scripts/run_train_ablation.py
+python scripts/run_eval_ablation.py
+```
+
+Configure model and ablation variants in `scripts/config_ablation.py`.
+
+## 7. CNNCap Baseline Models
+
+This is the standalone CNNCap ResNet34 baseline (largely following the official implementation https://github.com/THU-numbda/CNNCap), separate from AttentionCap:
+
+```bash
+python baselines/cnncap/run_train.py
+python baselines/cnncap/run_eval.py
+```
+
+Configure datasets, process-node window widths, GPUs, batch sizes, and tasks in
+`baselines/cnncap/config.py`.
+
+- `goal="total"` predicts self/total capacitance.
+- `goal="env"` predicts coupling capacitance.
+
+Outputs are written under `training_output/cnncap_baseline/`. Evaluation writes
+`val.log` and `test.log` with relative error, high-error ratio, FLOPs, parameter
+count, and inference time.
