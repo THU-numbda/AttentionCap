@@ -4,7 +4,7 @@ from pathlib import Path
 import run_train as runner
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-OUTPUT_ROOT = REPO_ROOT / "training_output/cnncap"
+OUTPUT_ROOT = REPO_ROOT / "training_output/main_results"
 GPUS = runner.GPUS
 MAX_CONCURRENCY = 4
 DATASETS = [

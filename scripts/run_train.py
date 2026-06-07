@@ -41,9 +41,6 @@ RUNS = [
 ]
 
 
-os.makedirs(OUTPUT_ROOT, exist_ok=True)
-
-
 def kvflag(key: str, value: str) -> str:
     return f"--{key}={value}"
 
@@ -58,12 +55,12 @@ def run_name_from(params):
     return f"{dataset}__{model}__b{params['batch_size']}{task}"
 
 
-def run_one(idx, base_params, sem):
+def run_one(idx, base_params, sem, output_root, gpus):
     with sem:
         params = dict(base_params)
-        device = params.get("device", GPUS[idx % len(GPUS)] if GPUS else "cpu")
+        device = params.get("device", gpus[idx % len(gpus)] if gpus else "cpu")
         run_name = run_name_from(params) or f"run{idx}"
-        run_dir = Path(OUTPUT_ROOT) / run_name / time.strftime("%Y%m%d%H%M%S")
+        run_dir = Path(output_root) / run_name / time.strftime("%Y%m%d%H%M%S")
 
         os.makedirs(run_dir, exist_ok=True)
         log_path = os.path.join(run_dir, "train.log")
@@ -84,10 +81,13 @@ def run_one(idx, base_params, sem):
 
 def main():
     mp.set_start_method("spawn", force=True)
+    output_root = Path(OUTPUT_ROOT)
+    gpus = list(GPUS)
+    os.makedirs(output_root, exist_ok=True)
     sem = mp.Semaphore(MAX_CONCURRENCY)
     procs = []
     for i, params in enumerate(RUNS):
-        p = mp.Process(target=run_one, args=(i, params, sem))
+        p = mp.Process(target=run_one, args=(i, params, sem, output_root, gpus))
         p.start()
         procs.append(p)
 
