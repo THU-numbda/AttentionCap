@@ -23,7 +23,8 @@ def run_name_from(params):
     if transformer:
         model += f"-h{params['n_head']}"
     task = "" if params.get("head_mode", "matrix") == "matrix" else f"__{params['head_mode'].replace('_', '-')}"
-    return f"{dataset}__{model}__b{params['batch_size']}{task}"
+    ablation = "".join(f"__{label}-{params[key]}" for key, label in (("ffn_type", "ffn"), ("loss_f", "loss")) if key in params)
+    return f"{dataset}__{model}__b{params['batch_size']}{task}{ablation}"
 
 
 def run_one(idx, base_params, sem, output_root, gpus):

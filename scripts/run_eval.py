@@ -26,10 +26,9 @@ def main(runs=RUNS, output_root=OUTPUT_ROOT, gpus=GPUS):
         cmd = BASE_CMD + [
             f"--device={device}",
             f"--out_dir={checkpoint.parent}",
-            kvflag("data_dir", params["data_dir"]),
             kvflag("checkpoint_path", checkpoint),
             "--eval_only=True",
-        ]
+        ] + [kvflag(key, value) for key, value in params.items()]
         print(f"[EVAL] {' '.join(shlex.quote(str(item)) for item in cmd)}\n  -> {log_path}", flush=True)
         with open(log_path, "w", buffering=1) as log:
             process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
