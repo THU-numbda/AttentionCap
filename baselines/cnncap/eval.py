@@ -8,14 +8,15 @@ if __package__ in (None, ""):
 
 import torch
 
-from baselines.cnncap.common import AverageMeter, clean_state_dict, seed_everything
+from baselines.cnncap.common import clean_state_dict, seed_everything
 from baselines.cnncap.data import load_split
 from baselines.cnncap.model import resnet34
 
 
 @torch.no_grad()
 def evaluate(loader, model, device, high_error_threshold, log):
-    errors = AverageMeter()
+    error_sum = 0
+    count = 0
     maximum = 0
     messages = []
     model.eval()
@@ -25,16 +26,35 @@ def evaluate(loader, model, device, high_error_threshold, log):
         relative_errors = torch.abs((model(features) - targets) / targets)
         for row, target, mask, total in zip(relative_errors, targets, masks, totals):
             selected = row.masked_select(mask)
-            errors.update(selected, 1)
+            error_sum += selected.sum().item()
+            count += selected.numel()
+            maximum = max(maximum, selected.max().item())
             for error, value in zip(selected, target.masked_select(mask)):
                 messages.append((error.item(), value.item(), total))
-        maximum = max(maximum, selected.max().item())
 
     high_errors = sum(error > high_error_threshold for error, _, _ in messages)
     for error, value, total in messages:
         log.write(f"{error},{value},{total}\n")
-    log.write(f"# High error rate (> {high_error_threshold:.2f}): {high_errors / len(messages):.4f}\n")
-    return errors.avg, maximum
+    return {"relerr": error_sum / count, "higherr_ratio": high_errors / count, "max_relerr": maximum}
+
+
+def format_metrics(split, goal, metrics, high_error_threshold):
+    row = [
+        split,
+        "self" if goal == "total" else "coupling",
+        f"{metrics['relerr']:.2%}",
+        f"{metrics['higherr_ratio']:.2%}",
+        f"{metrics['max_relerr']:.2%}",
+    ]
+    headers = ["split", "metric", "relerr", f">{high_error_threshold:.0%}", "max relerr"]
+    widths = [max(len(header), len(value)) for header, value in zip(headers, row)]
+    return "\n".join(
+        (
+            " | ".join(header.ljust(width) for header, width in zip(headers, widths)),
+            "-+-".join("-" * width for width in widths),
+            " | ".join(value.ljust(width) if index < 2 else value.rjust(width) for index, (value, width) in enumerate(zip(row, widths))),
+        )
+    )
 
 
 @torch.no_grad()
@@ -105,7 +125,11 @@ def main():
     print(f"loss {checkpoint['loss']}")
 
     with args.logfile.open("w", buffering=1) as log:
-        average, maximum = evaluate(loader, model, device, 0.05 if args.goal == "total" else 0.10, log)
+        high_error_threshold = 0.05 if args.goal == "total" else 0.10
+        metrics = evaluate(loader, model, device, high_error_threshold, log)
+        table = format_metrics(args.split, args.goal, metrics, high_error_threshold)
+        print(f"\n{table}")
+        log.write("\n".join(f"# {line}" for line in table.splitlines()) + "\n")
         total_flops, model_time = benchmark(loader, model, device)
         parameters = sum(parameter.numel() for parameter in model.parameters())
         example, _, _, _ = next(iter(loader))
@@ -118,7 +142,6 @@ def main():
         log.write(f"# FLOPs per sample: {flops / batch_size / 1e6:.3f} M, total {len(dataset) * flops / batch_size / 1e9:.3f} G\n")
         log.write(f"# FLOPs per batch (bs={batch_size}): {flops / 1e6:.3f} M\n")
         log.write(f"# Test all FLOPs:{total_flops / 1e12:.6f} B\n")
-        log.write(f"# Test avg {average} max {maximum}\n")
         log.write(f"# Batch size: {args.batch_size}\n")
         log.write(f"# Samples in test set: {len(dataset)}\n")
         log.write(f"# Batches in test set: {len(loader)}\n")
