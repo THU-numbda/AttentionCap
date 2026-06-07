@@ -17,6 +17,7 @@ plot_interval = 10 * eval_interval
 log_interval = 500
 eval_only = False
 checkpoint_path = ''
+finetune = False
 tensorboard_log = True
 # data
 data_dir = 'data/asap7_50K'
@@ -113,11 +114,12 @@ else:
     print("[load_state_dict] missing keys:", missing)
     print("[load_state_dict] unexpected keys:", unexpected)
     dataset_dict = checkpoint['dataset_dict']
-    iter_num = checkpoint['iter_num']
-    best_val_loss = checkpoint['best_val_loss']
+    if not finetune or eval_only:
+        iter_num = checkpoint['iter_num']
+        best_val_loss = checkpoint['best_val_loss']
     learning_rate /= 10
     min_lr /= 10
-    print(f"[finetuning] Lower learning rate to {learning_rate}, {min_lr}")
+    print(f"[finetuning] Starting from step {iter_num} with learning rate {learning_rate}, {min_lr}")
 
 model.to(device)
 
