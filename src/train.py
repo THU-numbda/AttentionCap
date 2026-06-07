@@ -36,6 +36,7 @@ attention_type = 'standard'
 ffn_type = 'swiglu'
 norm_type = 'rmsnorm'
 head_activation = 'none'
+head_mode = 'matrix'
 loss_f = "laplacian"
 
 # adamw optimizer
@@ -84,6 +85,7 @@ model_args = dict(
     norm_type=norm_type,
     ffn_type=ffn_type,
     head_activation=head_activation,
+    head_mode=head_mode,
 )
 if not checkpoint_path:
     print("Initializing a new model from scratch")
@@ -93,7 +95,12 @@ if not checkpoint_path:
 else:
     print(f"Loading checkpoint from {checkpoint_path}")
     checkpoint = torch.load(checkpoint_path, map_location=device)
-    gptconf = GPTConfig(**checkpoint['model_args'])
+    model_args = dict(checkpoint['model_args'])
+    model_args.setdefault("head_mode", head_mode)
+    gptconf = GPTConfig(**model_args)
+    head_mode = gptconf.head_mode
+    model_args["head_mode"] = head_mode
+    config["head_mode"] = head_mode
     model = GPT(gptconf)
     state_dict = checkpoint['model']
 
@@ -138,6 +145,7 @@ dataloaders = {
         num_workers=1,
         pin_memory=device_type == "cuda",
         is_train=split == "train",
+        head_mode=head_mode,
     )
     for split in ("train", "val", "test")
 }
@@ -150,6 +158,9 @@ def benchmark_test_set():
     model.eval()
     test_loader = dataloaders["test"]
     sample_count = len(test_loader.dataset)
+    if not sample_count:
+        print("No test samples; skipping benchmark")
+        return
     total_flops = 0
     for X, _, _ in test_loader:
         X = X.to(device)
@@ -192,21 +203,30 @@ def estimate_loss(writer=None, max_batches=200):
             weights = torch.nn.functional.relu(-pred)
             pred = torch.diag_embed(weights.sum(dim=-1)) - weights
             b, t, _ = X.shape
-            count = mask.sum().item() if mask is not None else b * t
 
-            diag = torch.diagonal(Y, dim1=1, dim2=2)
-            self_relerr = torch.diagonal(pred, dim1=1, dim2=2) / (diag + 1e-9) - 1
-            if mask is not None:
-                self_relerr *= mask
+            if head_mode == "first_row":
+                pred = pred[:, 0]
+                count = b
+                self_relerr = pred[:, 0] / (Y[:, 0] + 1e-9) - 1
+                coupling_mask = Y.abs() > 0.01 * Y[:, :1].abs()
+                coupling_mask[:, 0] = False
+                if mask is not None:
+                    coupling_mask &= mask.bool()
+                coupling_relerr = (pred / (Y + 1e-9) - 1).abs()
+            else:
+                count = mask.sum().item() if mask is not None else b * t
+                diag = torch.diagonal(Y, dim1=1, dim2=2)
+                self_relerr = torch.diagonal(pred, dim1=1, dim2=2) / (diag + 1e-9) - 1
+                if mask is not None:
+                    self_relerr *= mask
+                diag = diag.abs()
+                coupling_mask = (Y.abs() > 0.01 * diag.unsqueeze(-1)) & (Y.abs() > 0.01 * diag.unsqueeze(-2))
+                coupling_mask &= ~torch.eye(t, dtype=torch.bool, device=Y.device).unsqueeze(0)
+                if mask is not None:
+                    coupling_mask &= mask.unsqueeze(-1).bool() & mask.unsqueeze(-2).bool()
+                coupling_relerr = (pred / (Y + 1e-9) - 1).abs()
 
-            diag = diag.abs()
-            coupling_mask = (Y.abs() > 0.01 * diag.unsqueeze(-1)) & (Y.abs() > 0.01 * diag.unsqueeze(-2))
-            coupling_mask &= ~torch.eye(t, dtype=torch.bool, device=Y.device).unsqueeze(0)
-            coupling_relerr = (pred / (Y + 1e-9) - 1).abs()
-            if mask is not None:
-                coupling_relerr *= mask.unsqueeze(-1) * mask.unsqueeze(-2)
             coupling_count = coupling_mask.sum().item()
-
             weighted_loss = loss.item() * count
             totals["loss"] += weighted_loss
             totals["self_relerr"] += self_relerr.abs().sum().item()
@@ -231,7 +251,8 @@ def estimate_loss(writer=None, max_batches=200):
             log_loss_by_size(writer, loss_by_size, split, iter_num)
             if split == "val":
                 log_embedding(writer, model, iter_num)
-                log_prediction_comparison(writer, pred, Y, iter_num)
+                if head_mode == "matrix":
+                    log_prediction_comparison(writer, pred, Y, iter_num)
 
     model.train()
     return out

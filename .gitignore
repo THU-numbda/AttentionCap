@@ -3,3 +3,5 @@ __pycache__
 *.png
 training_output
 *.egg-info
+
+data/cnncap/raw/

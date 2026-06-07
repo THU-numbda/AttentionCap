@@ -7,16 +7,16 @@ from pathlib import Path
 from run_train import BASE_CMD, GPUS, OUTPUT_ROOT, RUNS, kvflag, run_name_from
 
 
-def latest_checkpoint(params):
-    checkpoints = (Path(OUTPUT_ROOT) / run_name_from(params)).glob("*/ckpt.pt")
+def latest_checkpoint(params, output_root=OUTPUT_ROOT):
+    checkpoints = (Path(output_root) / run_name_from(params)).glob("*/ckpt.pt")
     return max(checkpoints, key=lambda path: path.stat().st_mtime, default=None)
 
 
-def main():
-    device = GPUS[0] if GPUS else "cpu"
-    for params in RUNS:
+def main(runs=RUNS, output_root=OUTPUT_ROOT, gpus=GPUS):
+    device = gpus[0] if gpus else "cpu"
+    for params in runs:
         run_name = run_name_from(params)
-        checkpoint = latest_checkpoint(params)
+        checkpoint = latest_checkpoint(params, output_root)
         if checkpoint is None:
             print(f"[SKIP] {run_name}: no checkpoint", flush=True)
             continue

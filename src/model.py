@@ -184,11 +184,14 @@ class GPTConfig:
     norm_type: str = 'layernorm'
     ffn_type: str = 'swiglu'
     head_activation: str = 'relu'
+    head_mode: str = 'matrix'
 
 
 class GPT(nn.Module):
     def __init__(self, config: GPTConfig):
         super().__init__()
+        if config.head_mode not in ("matrix", "first_row"):
+            raise ValueError(f"Unknown head mode: {config.head_mode}")
         self.config = config
         self.input_embedding = nn.Linear(config.input_dim, config.n_embd, bias=config.bias)
 
@@ -217,16 +220,22 @@ class GPT(nn.Module):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
     def _calculate_loss(self, pred, targets, attention_mask=None, loss_f=None):
+        if self.config.head_mode == "first_row":
+            if targets.ndim != 2:
+                raise ValueError(f"Expected first-row targets, got shape {tuple(targets.shape)}")
+            loss = ((pred[:, 0] - targets) / (targets[:, :1] + 1e-9)).square()
+            if attention_mask is not None:
+                loss *= attention_mask
+            return loss.sum() / pred.size(0)
+
         if targets.ndim != 3:
             raise ValueError(f"Expected matrix targets, got shape {tuple(targets.shape)}")
-
         if loss_f == "laplacian":
             diagonal = torch.diagonal(targets, dim1=1, dim2=2)
             normalizer = (diagonal + 1e-9).pow(-0.5)
             loss = ((pred - targets) * normalizer.unsqueeze(-1) * normalizer.unsqueeze(-2)).square()
         else:
             loss = (pred - targets).square()
-
         if attention_mask is not None:
             loss = loss * attention_mask.unsqueeze(-1) * attention_mask.unsqueeze(-2)
             return loss.sum() / attention_mask.sum()

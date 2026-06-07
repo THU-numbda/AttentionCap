@@ -13,7 +13,11 @@ BASE_CMD = [sys.executable, REPO_ROOT / "src/train.py"]
 OUTPUT_ROOT = REPO_ROOT / "training_output/main_results"
 GPUS = ["cuda:7"]
 MAX_CONCURRENCY = 3
-DATASETS = [REPO_ROOT / "data/real65_50K", REPO_ROOT / "data/asap7_50K", REPO_ROOT / "data"]
+DATASETS = [
+    REPO_ROOT / "data/real65_50K",
+    REPO_ROOT / "data/asap7_50K",
+    REPO_ROOT / "data"
+]
 
 MODEL_CONFIGS = [
     {
@@ -50,7 +54,8 @@ def run_name_from(params):
     model = f"{'transformer' if transformer else 'mlp'}-d{params['n_embd']}-l{params['n_layer']}"
     if transformer:
         model += f"-h{params['n_head']}"
-    return f"{dataset}__{model}__b{params['batch_size']}"
+    task = "" if params.get("head_mode", "matrix") == "matrix" else f"__{params['head_mode'].replace('_', '-')}"
+    return f"{dataset}__{model}__b{params['batch_size']}{task}"
 
 
 def run_one(idx, base_params, sem):

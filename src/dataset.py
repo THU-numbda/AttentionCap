@@ -52,12 +52,15 @@ def collate_and_pad_with_mask(batch, no_padding=False):
     max_length = padded_features.size(1)
     mask = (torch.arange(max_length)[None, :] < lengths[:, None]).float()
 
-    padded_outputs = torch.stack(
-        [
-            torch.nn.functional.pad(output, (0, max_length - output.size(1), 0, max_length - output.size(0)))
-            for output in outputs
-        ]
-    )
+    if outputs[0].ndim == 1:
+        padded_outputs = torch.nn.utils.rnn.pad_sequence(outputs, batch_first=True)
+    else:
+        padded_outputs = torch.stack(
+            [
+                torch.nn.functional.pad(output, (0, max_length - output.size(1), 0, max_length - output.size(0)))
+                for output in outputs
+            ]
+        )
     return padded_features, padded_outputs, mask
 
 
@@ -83,6 +86,7 @@ def get_dataloader(
     num_workers: int = 0,
     pin_memory: bool = False,
     is_train: bool = False,
+    head_mode: str = "matrix",
 ) -> torch.utils.data.DataLoader:
     dataset_dict = {os.path.basename(key): value for key, value in dataset_dict.items()}
     samples = []
@@ -107,8 +111,9 @@ def get_dataloader(
             if features is None or outputs is None:
                 logging.warning("Skipping size %s; missing features or outputs", size)
                 continue
-            if outputs.ndim != 3:
-                raise ValueError(f"Expected matrix outputs, got shape {tuple(outputs.shape)}")
+            expected_ndim = 3 if head_mode == "matrix" else 2
+            if outputs.ndim != expected_ndim:
+                raise ValueError(f"Expected {head_mode} outputs, got shape {tuple(outputs.shape)}")
 
             if len(dataset_dict) > 1:
                 index_channel = torch.full((*features.shape[:-1], 1), float(dataset_index), dtype=features.dtype)
