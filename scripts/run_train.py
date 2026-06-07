@@ -10,35 +10,6 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 BASE_CMD = [sys.executable, REPO_ROOT / "src/train.py"]
-OUTPUT_ROOT = REPO_ROOT / "training_output/main_results"
-GPUS = ["cuda:7"]
-MAX_CONCURRENCY = 3
-DATASETS = [
-    REPO_ROOT / "data/real65_50K",
-    REPO_ROOT / "data/asap7_50K",
-    REPO_ROOT / "data"
-]
-
-MODEL_CONFIGS = [
-    {
-        "use_transformer": "True",
-        "n_embd": "256",
-        "n_head": "4",
-        "n_layer": "6",
-    },
-    {
-        "use_transformer": "True",
-        "n_embd": "384",
-        "n_head": "4",
-        "n_layer": "8",
-    }
-]
-
-RUNS = [
-    {**cfg, "data_dir": data_dir, "batch_size": "512" if data_dir == REPO_ROOT / "data" else "128"}
-    for data_dir in DATASETS
-    for cfg in MODEL_CONFIGS
-]
 
 
 def kvflag(key: str, value: str) -> str:
@@ -79,14 +50,14 @@ def run_one(idx, base_params, sem, output_root, gpus):
             raise SystemExit(ret)
 
 
-def main():
+def main(runs, output_root, gpus, max_concurrency):
     mp.set_start_method("spawn", force=True)
-    output_root = Path(OUTPUT_ROOT)
-    gpus = list(GPUS)
+    output_root = Path(output_root)
+    gpus = list(gpus)
     os.makedirs(output_root, exist_ok=True)
-    sem = mp.Semaphore(MAX_CONCURRENCY)
+    sem = mp.Semaphore(max_concurrency)
     procs = []
-    for i, params in enumerate(RUNS):
+    for i, params in enumerate(runs):
         p = mp.Process(target=run_one, args=(i, params, sem, output_root, gpus))
         p.start()
         procs.append(p)
@@ -99,4 +70,6 @@ def main():
     print("All runs finished.")
 
 if __name__ == "__main__":
-    main()
+    from config import GPUS, MAX_CONCURRENCY, OUTPUT_ROOT, RUNS
+
+    main(RUNS, OUTPUT_ROOT, GPUS, MAX_CONCURRENCY)

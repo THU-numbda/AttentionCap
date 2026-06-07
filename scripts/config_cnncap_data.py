@@ -1,11 +1,4 @@
-#!/usr/bin/env python3
-from pathlib import Path
-
-import run_train as runner
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
-OUTPUT_ROOT = REPO_ROOT / "training_output/main_results"
-GPUS = runner.GPUS
+from config import GPUS, OUTPUT_ROOT, REPO_ROOT
 MAX_CONCURRENCY = 4
 DATASETS = [
     REPO_ROOT / "data/cnncap/55nm_C_2_3_6",
@@ -23,11 +16,3 @@ MODEL_CONFIG = {
     "batch_size": "128",
 }
 RUNS = [{**MODEL_CONFIG, "data_dir": data_dir} for data_dir in DATASETS]
-
-
-if __name__ == "__main__":
-    runner.OUTPUT_ROOT = OUTPUT_ROOT
-    runner.GPUS = GPUS
-    runner.MAX_CONCURRENCY = MAX_CONCURRENCY
-    runner.RUNS = RUNS
-    runner.main()

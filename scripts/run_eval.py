@@ -4,7 +4,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from run_train import BASE_CMD, GPUS, OUTPUT_ROOT, RUNS, kvflag, run_name_from
+from config import GPUS, OUTPUT_ROOT, RUNS
+from run_train import BASE_CMD, kvflag, run_name_from
 
 
 def latest_checkpoint(params, output_root=OUTPUT_ROOT):

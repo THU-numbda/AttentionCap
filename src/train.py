@@ -272,12 +272,31 @@ if tensorboard_log:
     writer = SummaryWriter(log_dir=out_dir)
 
 
+def format_metrics_table(metrics):
+    columns = [
+        ("split", lambda split: split),
+        ("loss", lambda split: f"{metrics[f'{split}/loss']:.4e}"),
+        ("self relerr", lambda split: f"{metrics[f'{split}/self_relerr']:.2%}"),
+        ("self >5%", lambda split: f"{metrics[f'{split}/self_higherr_ratio']:.2%}"),
+        ("coupling relerr", lambda split: f"{metrics[f'{split}/coupling_relerr']:.2%}"),
+        ("coupling >10%", lambda split: f"{metrics[f'{split}/coupling_higherr_ratio']:.2%}"),
+    ]
+    rows = [[value(split) for _, value in columns] for split in ("train", "val", "test")]
+    widths = [max(len(header), *(len(row[index]) for row in rows)) for index, (header, _) in enumerate(columns)]
+    header = " | ".join(name.ljust(width) for (name, _), width in zip(columns, widths))
+    divider = "-+-".join("-" * width for width in widths)
+    body = [
+        " | ".join(value.ljust(width) if index == 0 else value.rjust(width) for index, (value, width) in enumerate(zip(row, widths)))
+        for row in rows
+    ]
+    return "\n".join((header, divider, *body))
+
+
 def evaluate(step, lr, max_batches=200):
     global best_val_loss
     metrics = estimate_loss(writer, max_batches=max_batches)
     is_best = metrics["val/loss"] < best_val_loss
-    values = ",".join(f"{key} {value:4e}" for key, value in metrics.items())
-    print(f"{'[best]' if is_best else ''}[eval] step {step}: {values}")
+    print(f"{'[best]' if is_best else ''}[eval] step {step}\n{format_metrics_table(metrics)}")
 
     if writer is not None:
         for key, value in metrics.items():
