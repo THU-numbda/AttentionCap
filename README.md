@@ -172,3 +172,19 @@ Configure datasets, process-node window widths, GPUs, batch sizes, and tasks in
 Outputs are written under `training_output/cnncap_baseline/`. Evaluation writes
 `val.log` and `test.log` with relative error, high-error ratio, FLOPs, parameter
 count, and inference time.
+
+## Citation
+
+If you find this work useful, please cite:
+
+```
+@misc{huang2026attentioncaptransformerbasedcapacitance,
+      title={AttentionCap: Transformer Based Capacitance Matrix Learning Toward Full-Chip Extraction}, 
+      author={Jiechen Huang and Hector R. Rodriguez and Dingcheng Yang and Zuochang Ye and Yibo Lin and Wenjian Yu},
+      year={2026},
+      eprint={2606.08161},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2606.08161}, 
+}
+```
