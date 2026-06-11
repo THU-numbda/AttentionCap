@@ -5,8 +5,8 @@
 [![uv](https://img.shields.io/badge/package_manager-uv-6E56CF)](https://docs.astral.sh/uv/)
 [![DAC 2026](https://img.shields.io/badge/DAC-2026-005EB8)](https://www.dac.com/)
 
-The official implementation of "AttentionCap: Transformer Based Capacitance
-Matrix Learning Toward Full-Chip Extraction" (DAC'26). This repository
+The official implementation of ["AttentionCap: Transformer Based Capacitance
+Matrix Learning Toward Full-Chip Extraction" (DAC'26)](https://arxiv.org/abs/2606.08161). This repository
 provides the full pipeline to reproduce all results in the paper.
 
 <p align="center">
